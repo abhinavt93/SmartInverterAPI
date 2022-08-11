@@ -1,1 +1,3 @@
-$GIT_DIR/bin
+bin
+Debug
+obj
