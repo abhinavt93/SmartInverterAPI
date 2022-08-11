@@ -78,7 +78,10 @@ namespace SmartInverterAPI.Controllers
             {
                 lstGraphData = GetSolarGeneratedAndConsumption(lstGraphData);
             }
-
+            else if (input.ToUpper().Equals("inputbatteryPerc".ToUpper()) || input.ToUpper().Equals("inputbatteryPerc".ToUpper()))
+            {
+                lstGraphData = GetBatteryUsageData(lstGraphData);
+            }
 
             return Ok(lstGraphData);
         }
@@ -215,6 +218,66 @@ namespace SmartInverterAPI.Controllers
             graphData.TitleSecondary = "Consumption (Wh)";
             graphData.DataSecondary = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.ConsumptionWh).ToList();
+            lstGraphData.Add(graphData);
+
+            return lstGraphData;
+        }
+
+        private List<GraphData> GetBatteryUsageData(List<GraphData> lstGraphData)
+        {
+            GraphData graphData = new GraphData();
+            graphData.TitleMain = "Solar Power Generated (Wh)";
+            graphData.DataMain = dbContext.LastHourData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.SolarGeneratedWh).ToList();
+            graphData.Label = dbContext.LastHourData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.Hour.ToString("D2") + ':' + s.Minute.ToString("D2")).ToList();
+            graphData.TitleSecondary = "Battery (%)";
+            graphData.DataSecondary = dbContext.LastHourData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.BatteryPerc).ToList();
+            lstGraphData.Add(graphData);
+
+            graphData = new GraphData();
+            graphData.TitleMain = "Solar Power Generated (Wh)";
+            graphData.DataMain = dbContext.LastDayData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.SolarGeneratedWh).ToList();
+            graphData.Label = dbContext.LastDayData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.Hour.ToString("D2") + ":00").ToList();
+            graphData.TitleSecondary = "Battery (%)";
+            graphData.DataSecondary = dbContext.LastDayData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.BatteryPerc).ToList();
+            lstGraphData.Add(graphData);
+
+            graphData = new GraphData();
+            graphData.TitleMain = "Solar Power Generated (Wh)";
+            graphData.DataMain = dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.SolarGeneratedWh).ToList();
+            graphData.Label = dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.LoggedAt.ToString("dd-MMM-yyyy")).ToList();
+            graphData.TitleSecondary = "Battery (%)";
+            graphData.DataSecondary = dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.BatteryPerc).ToList();
+            lstGraphData.Add(graphData);
+
+            graphData = new GraphData();
+            graphData.TitleMain = "Solar Power Generated (Wh)";
+            graphData.DataMain = dbContext.LastYearData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.SolarGeneratedWh).ToList();
+            graphData.Label = dbContext.LastYearData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.LoggedAt.ToString("MMM-yyyy")).ToList();
+            graphData.TitleSecondary = "Battery (%)";
+            graphData.DataSecondary = dbContext.LastYearData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.BatteryPerc).ToList();
+            lstGraphData.Add(graphData);
+
+            graphData = new GraphData();
+            graphData.TitleMain = "Solar Power Generated (Wh)";
+            graphData.DataMain = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.SolarGeneratedWh).ToList();
+            graphData.Label = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.Year.ToString()).ToList();
+            graphData.TitleSecondary = "Battery (%)";
+            graphData.DataSecondary = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
+                .Select(s => s.BatteryPerc).ToList();
             lstGraphData.Add(graphData);
 
             return lstGraphData;
