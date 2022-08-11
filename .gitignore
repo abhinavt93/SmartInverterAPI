@@ -1,3 +1,8 @@
 bin
 Debug
 obj
+obj/Debug/net6.0/SmartInverterAPI.csproj.FileListAbsolute.txt
+obj/project.assets.json
+obj/project.nuget.cache
+obj/SmartInverterAPI.csproj.nuget.dgspec.json
+obj/SmartInverterAPI.csproj.nuget.g.props
