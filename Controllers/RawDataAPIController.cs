@@ -83,6 +83,22 @@ namespace SmartInverterAPI.Controllers
             return Ok(lstGraphData);
         }
 
+        [HttpGet]
+        public IActionResult GetUserDataAndConfig(int customerID)
+        {
+            var result = dbContext.UserDataAndConfig.Where(s => s.CustomerID == customerID).ToList().FirstOrDefault();
+            return Ok(result);
+        }
+
+        [HttpPost]
+        public IActionResult UpdateNextGridCutOffTime(UserDataAndConfig userData)
+        {
+            dbContext.UserDataAndConfig.Attach(userData);
+            dbContext.Entry(userData).Property(x => x.NextGridCutOffTime).IsModified = true;
+            dbContext.SaveChanges();
+
+            return Ok();
+        }
 
         private List<GraphData> GetAvgSolarOutputAndLoad(List<GraphData> lstGraphData)
         {

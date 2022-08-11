@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmartInverterAPI.Data;
 
@@ -11,9 +12,10 @@ using SmartInverterAPI.Data;
 namespace SmartInverterAPI.Migrations
 {
     [DbContext(typeof(InverterContext))]
-    partial class InverterContextModelSnapshot : ModelSnapshot
+    [Migration("20220811184520_UserConfigTableCreateAndSeed")]
+    partial class UserConfigTableCreateAndSeed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

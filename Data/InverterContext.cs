@@ -22,6 +22,8 @@ namespace SmartInverterAPI.Data
 
         public DbSet<DashboardData> DashboardData { get; set; }
 
+        public DbSet<UserDataAndConfig> UserDataAndConfig { get; set; }
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -39,6 +41,18 @@ namespace SmartInverterAPI.Data
                         eb.HasNoKey();
                         eb.ToView("VW_DashboardData");;
                     });
+
+            modelBuilder.Entity<UserDataAndConfig>().HasData(
+                new UserDataAndConfig
+                    {
+                        CustomerID = 610
+                        , BatteryCapacitykWh = 1.8M
+                        , NextGridCutOffTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 08, 00, 00)
+                        , LoggedAt = DateTime.Now
+                        , MinimumBatteryPerc = 10
+                        , SolarPanelCapacityWatts = 330
+                    }
+                );
 
             modelBuilder.Entity<LastHourData>().HasData
                 (
