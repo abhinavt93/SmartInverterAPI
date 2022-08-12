@@ -5,23 +5,23 @@ namespace SmartInverterAPI.Models
     {
         public int CustomerID { get; set; }
 
-        public Decimal PowerGeneratedThisMonth { get; set; }
+        public decimal PowerGeneratedThisMonth { get; set; }
 
-        public Decimal PowerConsumedThisMonth { get; set; }
+        public decimal PowerConsumedThisMonth { get; set; }
 
-        public Decimal PowerGeneratedToday { get; set; }
+        public decimal PowerGeneratedToday { get; set; }
 
-        public Decimal PowerConsumedToday { get; set; }
+        public decimal PowerConsumedToday { get; set; }
 
-        public Decimal PowerGeneratedPerDay { get; set; }
+        public decimal PowerGeneratedPerDay { get; set; }
 
-        public Decimal PowerConsumedPerDay { get; set; }
+        public decimal PowerConsumedPerDay { get; set; }
 
-        public Decimal BatteryPerc { get; set; }
+        public decimal BatteryPerc { get; set; }
 
-        public Decimal CurrentLoadWatts { get; set; }
+        public decimal CurrentLoadWatts { get; set; }
 
-        public Decimal CurrentSolarOutputWatts { get; set; }
+        public decimal CurrentSolarOutputWatts { get; set; }
 
         public string PowerSource { get; set; }
 
