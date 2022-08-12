@@ -16,6 +16,8 @@ namespace SmartInverterAPI.Models
 
         public DateTime NextGridCutOffTime { get; set; }
 
+        public string IsFirstRun { get; set; }
+
         public DateTime LoggedAt { get; set; }
     }
 }

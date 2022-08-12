@@ -103,6 +103,16 @@ namespace SmartInverterAPI.Controllers
             return Ok();
         }
 
+        [HttpPost]
+        public IActionResult UpdateIsFirstRun(UserDataAndConfig userData)
+        {
+            dbContext.UserDataAndConfig.Attach(userData);
+            dbContext.Entry(userData).Property(x => x.IsFirstRun).IsModified = true;
+            dbContext.SaveChanges();
+
+            return Ok();
+        }
+
         private List<GraphData> GetAvgSolarOutputAndLoad(List<GraphData> lstGraphData)
         {
             GraphData graphData = new GraphData();
