@@ -98,6 +98,7 @@ namespace SmartInverterAPI.Controllers
         {
             dbContext.UserDataAndConfig.Attach(userData);
             dbContext.Entry(userData).Property(x => x.NextGridCutOffTime).IsModified = true;
+            dbContext.Entry(userData).Property(x => x.IsNextGridCutOffTimeUpdated).IsModified = true;
             dbContext.SaveChanges();
 
             return Ok();

@@ -47,11 +47,12 @@ namespace SmartInverterAPI.Data
                     {
                         CustomerID = 610
                         , BatteryCapacitykWh = 1.8M
-                        , NextGridCutOffTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day + 1, 08, 00, 00)
+                        , NextGridCutOffTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day + 1, 06, 00, 00)
                         , LoggedAt = DateTime.Now
                         , MinimumBatteryPerc = 10
                         , SolarPanelCapacityWatts = 330
                         , IsFirstRun = "Y"
+                        , IsNextGridCutOffTimeUpdated = "N"
                     }
                 );
 
