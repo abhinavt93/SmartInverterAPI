@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmartInverterAPI.Data;
 
@@ -11,9 +12,10 @@ using SmartInverterAPI.Data;
 namespace SmartInverterAPI.Migrations
 {
     [DbContext(typeof(InverterContext))]
-    partial class InverterContextModelSnapshot : ModelSnapshot
+    [Migration("20220812111308_IsFirstRunColumnAdd")]
+    partial class IsFirstRunColumnAdd
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1219,9 +1221,6 @@ namespace SmartInverterAPI.Migrations
                     b.Property<string>("IsFirstRun")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("IsNextGridCutOffTimeUpdated")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("LoggedAt")
                         .HasColumnType("datetime2");
 
@@ -1244,10 +1243,9 @@ namespace SmartInverterAPI.Migrations
                             CustomerID = 610,
                             BatteryCapacitykWh = 1.8m,
                             IsFirstRun = "Y",
-                            IsNextGridCutOffTimeUpdated = "N",
-                            LoggedAt = new DateTime(2022, 8, 12, 16, 7, 1, 417, DateTimeKind.Local).AddTicks(4720),
+                            LoggedAt = new DateTime(2022, 8, 12, 12, 13, 7, 600, DateTimeKind.Local).AddTicks(9900),
                             MinimumBatteryPerc = 10m,
-                            NextGridCutOffTime = new DateTime(2022, 8, 13, 6, 0, 0, 0, DateTimeKind.Unspecified),
+                            NextGridCutOffTime = new DateTime(2022, 8, 13, 8, 0, 0, 0, DateTimeKind.Unspecified),
                             SolarPanelCapacityWatts = 330m
                         });
                 });

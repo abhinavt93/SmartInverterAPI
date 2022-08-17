@@ -14,7 +14,7 @@
         "outputPath": "/Users/abhinavtiwari/Projects/SmartInverterAPI/SmartInverterAPI/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/abhinavtiwari/.config/NuGet/NuGet.Config"
+          "/Users/abhinavtiwari/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
