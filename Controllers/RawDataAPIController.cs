@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -53,37 +54,84 @@ namespace SmartInverterAPI.Controllers
             }
             catch (Exception ex)
             {
-                string st = ex.ToString();
+                _logger.LogError(ex, "Error occurred while processing raw data.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [HttpPost]
+        public IActionResult UpdateNextGridCutOffTime(UserDataAndConfig userData)
+        {
+            try
+            {
+                dbContext.UserDataAndConfig.Attach(userData);
+                dbContext.Entry(userData).Property(x => x.NextGridCutOffTime).IsModified = true;
+                dbContext.Entry(userData).Property(x => x.IsNextGridCutOffTimeUpdated).IsModified = true;
+                dbContext.SaveChanges();
+
                 return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating grid cut-off time.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [HttpPost]
+        public IActionResult UpdateIsFirstRun(UserDataAndConfig userData)
+        {
+            try
+            {
+                dbContext.UserDataAndConfig.Attach(userData);
+                dbContext.Entry(userData).Property(x => x.IsFirstRun).IsModified = true;
+                dbContext.SaveChanges();
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating first-run property.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
 
         [HttpGet]
         public IActionResult GetDashboardData()
         {
-            var dashboardData = new DashboardDataWithUnits(dbContext.DashboardData.ToList().FirstOrDefault());
-            var result = getFormattedValuesAndUnits(dashboardData);
-            return Ok(result);
+            try
+            {
+                var dashboardData = new DashboardDataWithUnits(dbContext.DashboardData.ToList().FirstOrDefault());
+                var result = getFormattedValuesAndUnits(dashboardData);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting dashboard data.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpGet]
         public IActionResult GetGraphData(string input)
         {
-            var lstGraphData = new List<GraphData>(5);
-            if (input.ToUpper().Equals("avgSolarOutputWatts".ToUpper()) || input.ToUpper().Equals("avgLoadWatts".ToUpper()))
+            try
             {
-                lstGraphData = getAvgSolarOutputAndLoad(lstGraphData);
-            }
-            else if (input.ToUpper().Equals("solarGeneratedWh".ToUpper()) || input.ToUpper().Equals("powerConsumedWh".ToUpper()))
-            {
-                lstGraphData = getSolarGeneratedAndConsumption(lstGraphData);
-            }
-            else if (input.ToUpper().Equals("inputbatteryPerc".ToUpper()) || input.ToUpper().Equals("inputbatteryPerc".ToUpper()))
-            {
-                lstGraphData = getBatteryUsageData(lstGraphData);
-            }
+                var lstGraphData = new List<GraphData>(5);
+                if (input.Equals("avgSolarOutputWatts", StringComparison.OrdinalIgnoreCase) || input.Equals("avgLoadWatts", StringComparison.OrdinalIgnoreCase))
+                    lstGraphData = getAvgSolarOutputAndLoad(lstGraphData);
+                else if (input.Equals("solarGeneratedWh", StringComparison.OrdinalIgnoreCase) || input.Equals("powerConsumedWh", StringComparison.OrdinalIgnoreCase))
+                    lstGraphData = getSolarGeneratedAndConsumption(lstGraphData);
+                else if (input.Equals("inputbatteryPerc", StringComparison.OrdinalIgnoreCase) || input.Equals("inputbatteryPerc", StringComparison.OrdinalIgnoreCase))
+                    lstGraphData = getBatteryUsageData(lstGraphData);
 
-            return Ok(lstGraphData);
+                return Ok(lstGraphData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting graph data.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpGet]
@@ -91,27 +139,6 @@ namespace SmartInverterAPI.Controllers
         {
             var result = dbContext.UserDataAndConfig.Where(s => s.CustomerID == customerID).ToList().FirstOrDefault();
             return Ok(result);
-        }
-
-        [HttpPost]
-        public IActionResult UpdateNextGridCutOffTime(UserDataAndConfig userData)
-        {
-            dbContext.UserDataAndConfig.Attach(userData);
-            dbContext.Entry(userData).Property(x => x.NextGridCutOffTime).IsModified = true;
-            dbContext.Entry(userData).Property(x => x.IsNextGridCutOffTimeUpdated).IsModified = true;
-            dbContext.SaveChanges();
-
-            return Ok();
-        }
-
-        [HttpPost]
-        public IActionResult UpdateIsFirstRun(UserDataAndConfig userData)
-        {
-            dbContext.UserDataAndConfig.Attach(userData);
-            dbContext.Entry(userData).Property(x => x.IsFirstRun).IsModified = true;
-            dbContext.SaveChanges();
-
-            return Ok();
         }
 
         private List<GraphData> getAvgSolarOutputAndLoad(List<GraphData> lstGraphData)
