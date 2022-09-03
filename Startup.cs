@@ -7,10 +7,12 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using SmartInverterAPI.Data;
 
 namespace SmartInverterAPI
 {
@@ -42,6 +44,9 @@ namespace SmartInverterAPI
             {
                 options.AddPolicy("SiteCorsPolicy", corsBuilder.Build());
             });
+
+            services.AddDbContext<InverterContext>(
+                options => options.UseSqlServer(Configuration.GetConnectionString("CommonDatabase")));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -19,12 +20,12 @@ namespace SmartInverterAPI.Controllers
     {
 
         private readonly ILogger<RawDataAPIController> _logger;
-        private InverterContext dbContext;
+        private readonly InverterContext _dbContext;
 
-        public RawDataAPIController(ILogger<RawDataAPIController> logger)
+        public RawDataAPIController(ILogger<RawDataAPIController> logger, InverterContext dbContext)
         {
             _logger = logger;
-            dbContext = new InverterContext();
+            _dbContext = dbContext;
         }
 
         [HttpPost]
@@ -32,8 +33,8 @@ namespace SmartInverterAPI.Controllers
         {
             try
             {
-                await dbContext.RawData.AddAsync(data);
-                await dbContext.SaveChangesAsync();
+                await _dbContext.RawData.AddAsync(data);
+                await _dbContext.SaveChangesAsync();
 
                 var pSolarOutputWatts = new SqlParameter("@SolarOutputWatts", data.SolarOutputWatts);
                 var pSolarGeneratedWh = new SqlParameter("@SolarGeneratedWh", data.SolarGeneratedWh);
@@ -45,7 +46,7 @@ namespace SmartInverterAPI.Controllers
                 var pTimeIntervalSec = new SqlParameter("@TimeIntervalSec", data.TimeIntervalSec);
                 var pCustomerID = new SqlParameter("@CustomerID", data.CustomerID);
 
-                await dbContext.Database.ExecuteSqlRawAsync("EXEC spProcessRawData @SolarOutputWatts, @SolarGeneratedWh, @LoadWatts, @ConsumptionWh, @BatteryPerc, @PowerSource, @LoggedAt, @TimeIntervalSec, @CustomerID"
+                await _dbContext.Database.ExecuteSqlRawAsync("EXEC spProcessRawData @SolarOutputWatts, @SolarGeneratedWh, @LoadWatts, @ConsumptionWh, @BatteryPerc, @PowerSource, @LoggedAt, @TimeIntervalSec, @CustomerID"
                     , pSolarOutputWatts, pSolarGeneratedWh, pLoadWatts, pConsumptionWh, pBatteryPerc, pPowerSource, pLoggedAt, pTimeIntervalSec, pCustomerID
                     );
 
@@ -53,121 +54,147 @@ namespace SmartInverterAPI.Controllers
             }
             catch (Exception ex)
             {
-                string st = ex.ToString();
+                _logger.LogError(ex, "Error occurred while processing raw data.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [HttpPost]
+        public IActionResult UpdateNextGridCutOffTime(UserDataAndConfig userData)
+        {
+            try
+            {
+                _dbContext.UserDataAndConfig.Attach(userData);
+                _dbContext.Entry(userData).Property(x => x.NextGridCutOffTime).IsModified = true;
+                _dbContext.Entry(userData).Property(x => x.IsNextGridCutOffTimeUpdated).IsModified = true;
+                _dbContext.SaveChanges();
+
                 return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating grid cut-off time.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [HttpPost]
+        public IActionResult UpdateIsFirstRun(UserDataAndConfig userData)
+        {
+            try
+            {
+                _dbContext.UserDataAndConfig.Attach(userData);
+                _dbContext.Entry(userData).Property(x => x.IsFirstRun).IsModified = true;
+                _dbContext.SaveChanges();
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating first-run property.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
 
         [HttpGet]
         public IActionResult GetDashboardData()
         {
-            var dashboardData = new DashboardDataWithUnits(dbContext.DashboardData.ToList().FirstOrDefault());
-            var result = getFormattedValuesAndUnits(dashboardData);
-            return Ok(result);
+            try
+            {
+                var dashboardData = new DashboardDataWithUnits(_dbContext.DashboardData.ToList().FirstOrDefault());
+                var result = getFormattedValuesAndUnits(dashboardData);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting dashboard data.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpGet]
         public IActionResult GetGraphData(string input)
         {
-            var lstGraphData = new List<GraphData>(5);
-            if (input.ToUpper().Equals("avgSolarOutputWatts".ToUpper()) || input.ToUpper().Equals("avgLoadWatts".ToUpper()))
+            try
             {
-                lstGraphData = getAvgSolarOutputAndLoad(lstGraphData);
-            }
-            else if (input.ToUpper().Equals("solarGeneratedWh".ToUpper()) || input.ToUpper().Equals("powerConsumedWh".ToUpper()))
-            {
-                lstGraphData = getSolarGeneratedAndConsumption(lstGraphData);
-            }
-            else if (input.ToUpper().Equals("inputbatteryPerc".ToUpper()) || input.ToUpper().Equals("inputbatteryPerc".ToUpper()))
-            {
-                lstGraphData = getBatteryUsageData(lstGraphData);
-            }
+                var lstGraphData = new List<GraphData>(5);
+                if (input.Equals("avgSolarOutputWatts", StringComparison.OrdinalIgnoreCase) || input.Equals("avgLoadWatts", StringComparison.OrdinalIgnoreCase))
+                    lstGraphData = getAvgSolarOutputAndLoad(lstGraphData);
+                else if (input.Equals("solarGeneratedWh", StringComparison.OrdinalIgnoreCase) || input.Equals("powerConsumedWh", StringComparison.OrdinalIgnoreCase))
+                    lstGraphData = getSolarGeneratedAndConsumption(lstGraphData);
+                else if (input.Equals("inputbatteryPerc", StringComparison.OrdinalIgnoreCase) || input.Equals("inputbatteryPerc", StringComparison.OrdinalIgnoreCase))
+                    lstGraphData = getBatteryUsageData(lstGraphData);
 
-            return Ok(lstGraphData);
+                return Ok(lstGraphData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting graph data.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpGet]
         public IActionResult GetUserDataAndConfig(int customerID)
         {
-            var result = dbContext.UserDataAndConfig.Where(s => s.CustomerID == customerID).ToList().FirstOrDefault();
+            var result = _dbContext.UserDataAndConfig.Where(s => s.CustomerID == customerID).ToList().FirstOrDefault();
             return Ok(result);
-        }
-
-        [HttpPost]
-        public IActionResult UpdateNextGridCutOffTime(UserDataAndConfig userData)
-        {
-            dbContext.UserDataAndConfig.Attach(userData);
-            dbContext.Entry(userData).Property(x => x.NextGridCutOffTime).IsModified = true;
-            dbContext.Entry(userData).Property(x => x.IsNextGridCutOffTimeUpdated).IsModified = true;
-            dbContext.SaveChanges();
-
-            return Ok();
-        }
-
-        [HttpPost]
-        public IActionResult UpdateIsFirstRun(UserDataAndConfig userData)
-        {
-            dbContext.UserDataAndConfig.Attach(userData);
-            dbContext.Entry(userData).Property(x => x.IsFirstRun).IsModified = true;
-            dbContext.SaveChanges();
-
-            return Ok();
         }
 
         private List<GraphData> getAvgSolarOutputAndLoad(List<GraphData> lstGraphData)
         {
             GraphData graphData = new GraphData();
             graphData.TitleMain = "Average Solar Power (Watts)";
-            graphData.DataMain = dbContext.LastHourData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastHourData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.AvgSolarOutputWatts).ToList();
-            graphData.Label = dbContext.LastHourData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastHourData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.Hour.ToString("D2") + ':' + s.Minute.ToString("D2")).ToList();
             graphData.TitleSecondary = "Average Load (Watts)";
-            graphData.DataSecondary = dbContext.LastHourData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastHourData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.AvgLoadWatts).ToList();
             lstGraphData.Add(graphData);
 
             graphData = new GraphData();
             graphData.TitleMain = "Average Solar Power (Watts)";
-            graphData.DataMain = dbContext.LastDayData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastDayData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.AvgSolarOutputWatts).ToList();
-            graphData.Label = dbContext.LastDayData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastDayData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.Hour.ToString("D2") + ":00").ToList();
             graphData.TitleSecondary = "Average Load (Watts)";
-            graphData.DataSecondary = dbContext.LastDayData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastDayData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.AvgLoadWatts).ToList();
             lstGraphData.Add(graphData);
 
             graphData = new GraphData();
             graphData.TitleMain = "Average Solar Power (Watts)";
-            graphData.DataMain = dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.AvgSolarOutputWatts).ToList();
-            graphData.Label = dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.LoggedAt.ToString("dd-MMM-yyyy")).ToList();
             graphData.TitleSecondary = "Average Load (Watts)";
-            graphData.DataSecondary = dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.AvgLoadWatts).ToList();
             lstGraphData.Add(graphData);
 
             graphData = new GraphData();
             graphData.TitleMain = "Average Solar Power (Watts)";
-            graphData.DataMain = dbContext.LastYearData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastYearData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.AvgSolarOutputWatts).ToList();
-            graphData.Label = dbContext.LastYearData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastYearData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.LoggedAt.ToString("MMM-yyyy")).ToList();
             graphData.TitleSecondary = "Average Load (Watts)";
-            graphData.DataSecondary = dbContext.LastYearData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastYearData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.AvgLoadWatts).ToList();
             lstGraphData.Add(graphData);
 
             graphData = new GraphData();
             graphData.TitleMain = "Average Solar Power (Watts)";
-            graphData.DataMain = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.AvgSolarOutputWatts).ToList();
-            graphData.Label = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.Year.ToString()).ToList();
             graphData.TitleSecondary = "Average Load (Watts)";
-            graphData.DataSecondary = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.AvgLoadWatts).ToList();
             lstGraphData.Add(graphData);
 
@@ -178,56 +205,56 @@ namespace SmartInverterAPI.Controllers
         {
             GraphData graphData = new GraphData();
             graphData.TitleMain = "Solar Power Generated (Wh)";
-            graphData.DataMain = dbContext.LastHourData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastHourData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.SolarGeneratedWh).ToList();
-            graphData.Label = dbContext.LastHourData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastHourData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.Hour.ToString("D2") + ':' + s.Minute.ToString("D2")).ToList();
             graphData.TitleSecondary = "Consumption (Wh)";
-            graphData.DataSecondary = dbContext.LastHourData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastHourData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.ConsumptionWh).ToList();
             lstGraphData.Add(graphData);
 
             graphData = new GraphData();
             graphData.TitleMain = "Solar Power Generated (Wh)";
-            graphData.DataMain = dbContext.LastDayData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastDayData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.SolarGeneratedWh).ToList();
-            graphData.Label = dbContext.LastDayData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastDayData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.Hour.ToString("D2") + ":00").ToList();
             graphData.TitleSecondary = "Consumption (Wh)";
-            graphData.DataSecondary = dbContext.LastDayData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastDayData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.ConsumptionWh).ToList();
             lstGraphData.Add(graphData);
 
             graphData = new GraphData();
             graphData.TitleMain = "Solar Power Generated (Wh)";
-            graphData.DataMain = dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.SolarGeneratedWh).ToList();
-            graphData.Label = dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.LoggedAt.ToString("dd-MMM-yyyy")).ToList();
             graphData.TitleSecondary = "Consumption (Wh)";
-            graphData.DataSecondary = dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.ConsumptionWh).ToList();
             lstGraphData.Add(graphData);
 
             graphData = new GraphData();
             graphData.TitleMain = "Solar Power Generated (Wh)";
-            graphData.DataMain = dbContext.LastYearData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastYearData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.SolarGeneratedWh).ToList();
-            graphData.Label = dbContext.LastYearData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastYearData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.LoggedAt.ToString("MMM-yyyy")).ToList();
             graphData.TitleSecondary = "Consumption (Wh)";
-            graphData.DataSecondary = dbContext.LastYearData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastYearData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.ConsumptionWh).ToList();
             lstGraphData.Add(graphData);
 
             graphData = new GraphData();
             graphData.TitleMain = "Solar Power Generated (Wh)";
-            graphData.DataMain = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.SolarGeneratedWh).ToList();
-            graphData.Label = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.Year.ToString()).ToList();
             graphData.TitleSecondary = "Consumption (Wh)";
-            graphData.DataSecondary = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.ConsumptionWh).ToList();
             lstGraphData.Add(graphData);
 
@@ -238,56 +265,56 @@ namespace SmartInverterAPI.Controllers
         {
             GraphData graphData = new GraphData();
             graphData.TitleMain = "Solar Power Generated (Wh)";
-            graphData.DataMain = dbContext.LastHourData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastHourData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.SolarGeneratedWh).ToList();
-            graphData.Label = dbContext.LastHourData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastHourData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.Hour.ToString("D2") + ':' + s.Minute.ToString("D2")).ToList();
             graphData.TitleSecondary = "Battery (%)";
-            graphData.DataSecondary = dbContext.LastHourData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastHourData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.BatteryPerc).ToList();
             lstGraphData.Add(graphData);
 
             graphData = new GraphData();
             graphData.TitleMain = "Solar Power Generated (Wh)";
-            graphData.DataMain = dbContext.LastDayData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastDayData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.SolarGeneratedWh).ToList();
-            graphData.Label = dbContext.LastDayData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastDayData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.Hour.ToString("D2") + ":00").ToList();
             graphData.TitleSecondary = "Battery (%)";
-            graphData.DataSecondary = dbContext.LastDayData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastDayData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.BatteryPerc).ToList();
             lstGraphData.Add(graphData);
 
             graphData = new GraphData();
             graphData.TitleMain = "Solar Power Generated (Wh)";
-            graphData.DataMain = dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.SolarGeneratedWh).ToList();
-            graphData.Label = dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.LoggedAt.ToString("dd-MMM-yyyy")).ToList();
             graphData.TitleSecondary = "Battery (%)";
-            graphData.DataSecondary = dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastMonthData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.BatteryPerc).ToList();
             lstGraphData.Add(graphData);
 
             graphData = new GraphData();
             graphData.TitleMain = "Solar Power Generated (Wh)";
-            graphData.DataMain = dbContext.LastYearData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastYearData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.SolarGeneratedWh).ToList();
-            graphData.Label = dbContext.LastYearData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastYearData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.LoggedAt.ToString("MMM-yyyy")).ToList();
             graphData.TitleSecondary = "Battery (%)";
-            graphData.DataSecondary = dbContext.LastYearData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastYearData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.BatteryPerc).ToList();
             lstGraphData.Add(graphData);
 
             graphData = new GraphData();
             graphData.TitleMain = "Solar Power Generated (Wh)";
-            graphData.DataMain = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
+            graphData.DataMain = _dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.SolarGeneratedWh).ToList();
-            graphData.Label = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
+            graphData.Label = _dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.Year.ToString()).ToList();
             graphData.TitleSecondary = "Battery (%)";
-            graphData.DataSecondary = dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
+            graphData.DataSecondary = _dbContext.LastDecadeData.OrderBy(s => s.LoggedAt)
                 .Select(s => s.BatteryPerc).ToList();
             lstGraphData.Add(graphData);
 

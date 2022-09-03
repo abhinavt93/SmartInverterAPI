@@ -24,11 +24,11 @@ namespace SmartInverterAPI.Data
 
         public DbSet<UserDataAndConfig> UserDataAndConfig { get; set; }
 
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        public InverterContext(DbContextOptions<InverterContext> options)
+        : base(options)
         {
-            optionsBuilder.UseSqlServer("Server=localhost;Database=Common;User Id=sa;Password=Password!23;");
         }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
