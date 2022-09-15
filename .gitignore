@@ -7,3 +7,4 @@ obj/project.nuget.cache
 obj/SmartInverterAPI.csproj.nuget.dgspec.json
 obj/SmartInverterAPI.csproj.nuget.g.props
 obj/Debug/net6.0/SmartInverterAPI.csproj.FileListAbsolute.txt
+*.pubxml
