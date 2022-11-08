@@ -101,7 +101,7 @@ namespace SmartInverterAPI.Controllers
         {
             try
             {
-                var dashboardData = new DashboardDataWithUnits(_dbContext.DashboardData.ToList().FirstOrDefault());
+                var dashboardData = new DashboardDataWithUnits(_dbContext.DashboardData.FirstOrDefault());
                 var result = getFormattedValuesAndUnits(dashboardData);
                 return Ok(result);
             }

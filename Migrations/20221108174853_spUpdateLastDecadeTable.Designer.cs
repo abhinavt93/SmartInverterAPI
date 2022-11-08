@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmartInverterAPI.Data;
 
@@ -11,9 +12,10 @@ using SmartInverterAPI.Data;
 namespace SmartInverterAPI.Migrations
 {
     [DbContext(typeof(InverterContext))]
-    partial class InverterContextModelSnapshot : ModelSnapshot
+    [Migration("20221108174853_spUpdateLastDecadeTable")]
+    partial class spUpdateLastDecadeTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1245,7 +1247,7 @@ namespace SmartInverterAPI.Migrations
                             BatteryCapacitykWh = 1.8m,
                             IsFirstRun = "Y",
                             IsNextGridCutOffTimeUpdated = "N",
-                            LoggedAt = new DateTime(2022, 11, 8, 17, 49, 24, 328, DateTimeKind.Local).AddTicks(4040),
+                            LoggedAt = new DateTime(2022, 11, 8, 17, 48, 53, 487, DateTimeKind.Local).AddTicks(8570),
                             MinimumBatteryPerc = 10m,
                             NextGridCutOffTime = new DateTime(2022, 11, 9, 6, 0, 0, 0, DateTimeKind.Unspecified),
                             SolarPanelCapacityWatts = 330m

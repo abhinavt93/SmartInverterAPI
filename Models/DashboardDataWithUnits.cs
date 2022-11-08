@@ -5,21 +5,24 @@ namespace SmartInverterAPI.Models
     {
         public DashboardDataWithUnits(DashboardData dashboardData)
         {
-            this.BatteryPerc = dashboardData.BatteryPerc;
-            this.CurrentLoadWatts = dashboardData.CurrentLoadWatts;
-            this.CurrentSolarOutputWatts = dashboardData.CurrentSolarOutputWatts;
+            if(dashboardData != null)
+            {
+                this.BatteryPerc = dashboardData.BatteryPerc;
+                this.CurrentLoadWatts = dashboardData.CurrentLoadWatts;
+                this.CurrentSolarOutputWatts = dashboardData.CurrentSolarOutputWatts;
 
-            this.CustomerID = dashboardData.CustomerID;
-            this.LoggedAt = dashboardData.LoggedAt;
-            this.PowerConsumedPerDay = dashboardData.PowerConsumedPerDay;
+                this.CustomerID = dashboardData.CustomerID;
+                this.LoggedAt = dashboardData.LoggedAt;
+                this.PowerConsumedPerDay = dashboardData.PowerConsumedPerDay;
 
-            this.PowerConsumedThisMonth = dashboardData.PowerConsumedThisMonth;
-            this.PowerConsumedToday = dashboardData.PowerConsumedToday;
-            this.PowerGeneratedPerDay = dashboardData.PowerGeneratedPerDay;
+                this.PowerConsumedThisMonth = dashboardData.PowerConsumedThisMonth;
+                this.PowerConsumedToday = dashboardData.PowerConsumedToday;
+                this.PowerGeneratedPerDay = dashboardData.PowerGeneratedPerDay;
 
-            this.PowerGeneratedThisMonth = dashboardData.PowerGeneratedThisMonth;
-            this.PowerGeneratedToday = dashboardData.PowerGeneratedToday;
-            this.PowerSource = dashboardData.PowerSource;
+                this.PowerGeneratedThisMonth = dashboardData.PowerGeneratedThisMonth;
+                this.PowerGeneratedToday = dashboardData.PowerGeneratedToday;
+                this.PowerSource = dashboardData.PowerSource;
+            }
 
         }
         public string PowerGeneratedThisMonthUnit { get; set; }
